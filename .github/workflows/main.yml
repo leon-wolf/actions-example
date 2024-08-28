@@ -13,10 +13,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up GitHub CLI
-        uses: actions/setup-gh@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Pull Request to develop
         run: |
@@ -24,3 +20,5 @@ jobs:
           TARGET_BRANCH="develop"
 
           gh pr create --head "$SOURCE_BRANCH" --base "$TARGET_BRANCH" --title "Merge $SOURCE_BRANCH into develop" --body "This is an automated PR to merge $SOURCE_BRANCH into develop."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
