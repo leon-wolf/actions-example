@@ -1,22 +1,26 @@
+name: Create Pull Request to develop
+
 on:
   pull_request:
-    types:
-      - closed
+    types: [opened, reopened, synchronize]
     branches:
       - 'release/**'
 
 jobs:
-  create_request:
+  create-pr:
     runs-on: ubuntu-latest
-
-    if: github.event.pull_request.merged == true
-  
-    permissions:
-      pull-requests: write
-    
     steps:
-      - name: Create PR
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up GitHub CLI
+        uses: actions/setup-gh@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request to develop
         run: |
-          gh pr create -B base_branch -H branch_to_merge --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_BRANCH="${{ github.head_ref }}"
+          TARGET_BRANCH="develop"
+
+          gh pr create --head "$SOURCE_BRANCH" --base "$TARGET_BRANCH" --title "Merge $SOURCE_BRANCH into develop" --body "This is an automated PR to merge $SOURCE_BRANCH into develop."
