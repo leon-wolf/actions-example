@@ -12,7 +12,7 @@ jobs:
     if: github.event.pull_request.merged == true
   
     permissions:
-      pull-requests: wirte
+      pull-requests: write
     
     steps:
       - name: Create PR
