@@ -1,26 +1,42 @@
-name: Create Pull Request to develop
-
+name: Cherry-pick merged and labeled pull request
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    branches:
-      - 'release/**'
-
+  pull_request_target:
+    types: [ closed ]
+permissions:
+  contents: write # so it can comment
+  pull-requests: write # so it can create pull requests
 jobs:
-  create-pr:
-    runs-on: ubuntu-latest
+  cherry_pick:
+    name: Cherry-pick merged and labeled pull request
+    runs-on: ubuntu:latest
+    # Don't run on closed unmerged pull requests
+    if: github.event.pull_request.merged
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up GitHub CLI
-        uses: actions/setup-gh@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create pull request with cherry picked commits
+        id: cherry_pick
+        uses: korthout/backport-action@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Pull Request to develop
-        run: |
-          SOURCE_BRANCH="${{ github.head_ref }}"
-          TARGET_BRANCH="develop"
-
-          gh pr create --head "$SOURCE_BRANCH" --base "$TARGET_BRANCH" --title "Merge $SOURCE_BRANCH into develop" --body "This is an automated PR to merge $SOURCE_BRANCH into develop."
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          label_pattern: '^cherry-pick to ([^ ]+)$'
+          pull_title: '${pull_title} (cherry-pick)'
+          pull_description: '${pull_description}'
+          experimental: '{ "detect_merge_method": true }'
+      # - name: Approve pull request
+      #   if: ${{ steps.cherry_pick.outputs.created_pull_numbers != '' }}
+      #   uses: hmarr/auto-approve-action@v4
+      #   with:
+      #     github-token: ${{ secrets.AUTO_APPROVAL }}
+      #     review-message: "Auto approved cherry-picked PR"
+      #     pull-request-number: ${{ steps.cherry_pick.outputs.created_pull_numbers }}
+      - name: Install GitHub CLI
+        uses: sersoft-gmbh/setup-gh-cli-action@v2
+        with:
+          version: stable
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Enable auto-merge on pull request
+        if: ${{ steps.cherry_pick.outputs.created_pull_numbers != '' }}
+        run: gh pr merge --rebase --auto "${{ steps.cherry_pick.outputs.created_pull_numbers }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
