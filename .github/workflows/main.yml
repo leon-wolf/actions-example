@@ -6,23 +6,17 @@ on:
       - 'release/**'
 
 jobs:
-  if_merged:
+  create_request:
+    runs-on: ubuntu-latest
+
     if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+  
+    permissions:
+      pull-requests: wirte
+    
     steps:
-    - run: |
-        echo The PR was merged
-  release_pull_request:
-    runs-on: ubuntu-latest
-    name: release_pull_request
-    steps:
-    - name: checkout
-      uses: actions/checkout@v1
-    - name: Create PR to branch
-      uses: gorillio/github-action-cherry-pick@master
-      with:
-        pr_branch: 'develop'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITBOT_EMAIL: <BOT_EMAIL>
-        DRY_RUN: false
+      - name: Create PR
+        run: |
+          gh pr create -B base_branch -H branch_to_merge --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
